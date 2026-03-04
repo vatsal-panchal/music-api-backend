@@ -2,84 +2,88 @@ const musicModel = require("../models/music.model");
 const albumModel = require("../models/album.model");
 const { uploadFile } = require("../services/storage.service");
 
+// Upload Song
 async function createMusic(req, res) {
-  const { title } = req.body;
-  const file = req.file;
+  try {
+    const { title } = req.body;
+    const file = req.file;
 
-  const result = await uploadFile(file.buffer.toString("base64"));
+    if (!file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
 
-  const music = await musicModel.create({
-    uri: result.url,
-    title,
-    artist: req.user.id,
-  });
+    const uploaded = await uploadFile(file.buffer);
 
-  res.status(201).json({
-    message: "music created successfully",
-    music: {
-      id: music._id,
-      uri: music.uri,
-      title: music.title,
-      artist: music.artist,
-    },
-  });
+    const music = await musicModel.create({
+      title,
+      uri: uploaded.url,
+      artist: req.user.id,
+    });
+
+    res.status(201).json(music);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 }
 
+// Create Album
 async function createAlbum(req, res) {
-  const { title, musics } = req.body;
+  try {
+    const { title } = req.body;
 
-  const album = await albumModel.create({
-    title,
-    artist: req.user.id,
-    musics: musics,
-  });
+    const album = await albumModel.create({
+      title,
+      artist: req.user.id,
+    });
 
-  res.status(201).json({
-    message: "album created successfully",
-    album: {
-      id: album._id,
-      title: album.title,
-      artist: album.artist,
-      musics: album.musics,
-    },
-  });
+    res.status(201).json(album);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 }
 
+// Get All Musics
 async function getAllMusics(req, res) {
-  const musics = await musicModel.find()
-  .limit(2)
-  .populate("artist");
-
-  res.status(200).json({
-    message: "musics fetched successfully",
-    musics: musics,
-  });
+  try {
+    const musics = await musicModel.find().populate("artist", "username");
+    res.status(200).json(musics);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 }
 
+// Get All Albums
 async function getAllAlbums(req, res) {
-  const albums = await albumModel
-    .find()
-    .populate("artist")
-    .populate("musics");
-
-  res.status(200).json({
-    message: "albums fetched successfully",
-    albums: albums,
-  });
+  try {
+    const albums = await albumModel.find().populate("artist", "username").populate("musics");
+    res.status(200).json(albums);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 }
 
+// Get Album By ID
 async function getAlbumById(req, res) {
-  const albumId = req.params.albumId;
+  try {
+    const { albumId } = req.params;
+    const album = await albumModel
+      .findById(albumId)
+      .populate("artist", "username")
+      .populate("musics");
 
-  const album = await albumModel
-    .findById(albumId)
-    .populate("artist")
+    if (!album) {
+      return res.status(404).json({ message: "Album not found" });
+    }
 
-
-  res.status(200).json({
-    message: "album fetched successfully",
-    album: album,
-  });
+    res.status(200).json(album);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 }
 
 module.exports = {

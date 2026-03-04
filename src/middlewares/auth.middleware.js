@@ -31,20 +31,20 @@ async function authArtist(req, res, next) {
 async function authUser(req, res, next) {
   const token = req.cookies.token;
 
-  if (!token) {
-    res.status(401).json({
-      message: "Unauthorized",
-    });
-  }
+if (!token) {
+  return res.status(401).json({
+    message: "Unauthorized",
+  });
+}
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.role !== "user") {
-      res.status(403).json({
-        message: "you don't have access",
-      });
-    }
+if (decoded.role !== "user") {
+  return res.status(403).json({
+    message: "you don't have access",
+  });
+}
     req.user = decoded;
 
     next();
